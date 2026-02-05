@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah User Hotspot - UMPKU</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Background -->
+    <div class="wallpaper-bg">
+        <div class="slide"></div>
+    </div>
+    <div class="overlay-bg"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">
+            <img src="img/logo_web_umpku_color.png" alt="UMPKU Logo">
+        </a>
+        <div class="nav-menu">
+            <a href="login.html" class="nav-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Kembali</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <section class="page-section">
+        <div class="centered-container">
+            <h1 class="title-dark">Tambah User Hotspot</h1>
+            <p class="subtitle-dark">Buat akun baru untuk akses WiFi kampus</p>
+
+            <!-- Alert Messages -->
+            <div id="alertSuccess" class="info-box" style="display:none; background: rgba(76, 175, 80, 0.1); border-color: var(--success);">
+                <p style="color: var(--success); text-align: center;">
+                    <i class="fas fa-check-circle"></i> User berhasil ditambahkan!
+                </p>
+            </div>
+
+            <div id="alertError" class="error-box" style="display:none;">
+                <p id="errorMessage" style="text-align: center;"></p>
+            </div>
+
+            <!-- Form -->
+            <form id="addUserForm" action="add_user.php" method="POST">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-wrapper">
+                        <input type="text" name="username" id="username" placeholder="Masukkan username" required>
+                        <i class="fas fa-user input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="password" id="password" placeholder="Masukkan password" required>
+                        <i class="fas fa-lock input-icon"></i>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Konfirmasi Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="confirm_password" id="confirmPassword" placeholder="Ulangi password" required>
+                        <i class="fas fa-lock input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Profile</label>
+                    <div class="input-wrapper">
+                        <select name="profile" id="profile" style="width:100%; padding:14px 45px; border:2px solid rgba(0,0,0,0.15); border-radius:10px; font-size:14px; font-family:'Poppins',sans-serif; background:rgba(255,255,255,0.9); appearance:none;">
+                            <option value="default">Default</option>
+                            <option value="mahasiswa">Mahasiswa</option>
+                            <option value="dosen">Dosen</option>
+                            <option value="staff">Staff</option>
+                            <option value="tamu">Tamu</option>
+                        </select>
+                        <i class="fas fa-users input-icon"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-accent btn-full" id="btnSubmit">
+                    <i class="fas fa-plus"></i>
+                    Tambah User
+                </button>
+            </form>
+
+            <div class="footer">
+                <p>&copy; 2026 UMPKU Surakarta - IT Support</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const alertError = document.getElementById('alertError');
+            const alertSuccess = document.getElementById('alertSuccess');
+            const errorMessage = document.getElementById('errorMessage');
+            const btn = document.getElementById('btnSubmit');
+
+            alertError.style.display = 'none';
+            alertSuccess.style.display = 'none';
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Password tidak cocok!';
+                alertError.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorMessage.textContent = 'Password minimal 6 karakter!';
+                alertError.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+            // Send data via AJAX
+            const formData = new FormData(this);
+            
+            fetch('add_user.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alertSuccess.style.display = 'block';
+                    this.reset();
+                } else {
+                    errorMessage.textContent = data.message || 'Gagal menambahkan user!';
+                    alertError.style.display = 'block';
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus"></i> Tambah User';
+            })
+            .catch(error => {
+                errorMessage.textContent = 'Terjadi kesalahan koneksi!';
+                alertError.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus"></i> Tambah User';
+            });
+        });
+    </script>
+</body>
+</html>
