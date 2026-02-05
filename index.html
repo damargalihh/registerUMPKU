@@ -37,7 +37,7 @@
             <!-- Alert Messages -->
             <div id="alertSuccess" class="info-box" style="display:none; background: rgba(76, 175, 80, 0.1); border-color: var(--success);">
                 <p style="color: var(--success); text-align: center;">
-                    <i class="fas fa-check-circle"></i> User berhasil ditambahkan!
+                    <i class="fas fa-check-circle"></i> User berhasil ditambahkan! Mengalihkan ke halaman login...
                 </p>
             </div>
 
@@ -141,6 +141,10 @@
                 if (data.success) {
                     alertSuccess.style.display = 'block';
                     this.reset();
+                    // Redirect ke halaman login setelah 2 detik
+                    setTimeout(function() {
+                        window.location.href = 'http://192.168.200.1/login';
+                    }, 2000);
                 } else {
                     errorMessage.textContent = data.message || 'Gagal menambahkan user!';
                     alertError.style.display = 'block';
