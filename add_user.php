@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 // MikroTik Configuration
 define('MIKROTIK_IP', '192.168.200.1');     // IP MikroTik
 define('MIKROTIK_USER', 'api_user');         // Username MikroTik
-define('MIKROTIK_PASS', '');                 // Password MikroTik
+define('MIKROTIK_PASS', 'newuser');          // Password MikroTik
 define('MIKROTIK_PORT', 8728);               // Port API
 
 // Response helper
@@ -65,11 +65,19 @@ try {
     if ($api->connect(MIKROTIK_IP, MIKROTIK_USER, MIKROTIK_PASS, MIKROTIK_PORT)) {
         
         // Check if user already exists
-        $existingUsers = $api->comm('/ip/hotspot/user/print', [
-            '?name' => $username
-        ]);
+        $allUsers = $api->comm('/ip/hotspot/user/print');
+        $userExists = false;
         
-        if (!empty($existingUsers)) {
+        if (is_array($allUsers)) {
+            foreach ($allUsers as $u) {
+                if (is_array($u) && isset($u['name']) && $u['name'] === $username) {
+                    $userExists = true;
+                    break;
+                }
+            }
+        }
+        
+        if ($userExists) {
             $api->disconnect();
             jsonResponse(false, 'Username sudah terdaftar!');
         }
@@ -84,7 +92,8 @@ try {
         
         $api->disconnect();
         
-        if (isset($response['!trap'])) {
+        // Check for error
+        if (is_array($response) && isset($response['!trap'])) {
             jsonResponse(false, 'Gagal menambahkan user: ' . ($response['!trap'][0]['message'] ?? 'Unknown error'));
         }
         
