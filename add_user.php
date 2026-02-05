@@ -4,7 +4,13 @@
  * Backend API for UMPKU WiFi Hotspot
  */
 
+// Disable output buffering
+while (ob_get_level()) ob_end_clean();
+
+// Set headers early
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
+header('Connection: close');
 
 // MikroTik Configuration
 define('MIKROTIK_IP', '192.168.200.1');     // IP MikroTik
@@ -12,14 +18,26 @@ define('MIKROTIK_USER', 'api_user');         // Username MikroTik
 define('MIKROTIK_PASS', 'newuser');          // Password MikroTik
 define('MIKROTIK_PORT', 8728);               // Port API
 
-// Response helper
+// Response helper - sends response and exits immediately
 function jsonResponse($success, $message, $data = null) {
-    echo json_encode([
+    $response = json_encode([
         'success' => $success,
         'message' => $message,
         'data' => $data
-    ]);
-    exit;
+    ], JSON_UNESCAPED_UNICODE);
+    
+    // Force send response
+    ignore_user_abort(true);
+    header('Content-Length: ' . strlen($response));
+    echo $response;
+    flush();
+    
+    // Close connection before any cleanup
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    
+    exit(0);
 }
 
 // Validate request method
@@ -56,11 +74,16 @@ if (!preg_match('/^[a-zA-Z0-9_-]+$/', $username)) {
 }
 
 // Try to add user to MikroTik
+$success = false;
+$errorMsg = '';
+$addedUsername = '';
+
 try {
     require_once 'RouterOS_API.php';
     
     $api = new RouterosAPI();
     $api->debug = false;
+    $api->timeout = 5;
     
     if ($api->connect(MIKROTIK_IP, MIKROTIK_USER, MIKROTIK_PASS, MIKROTIK_PORT)) {
         
@@ -78,7 +101,7 @@ try {
         }
         
         if ($userExists) {
-            $api->disconnect();
+            @$api->disconnect();
             jsonResponse(false, 'Username sudah terdaftar!');
         }
         
@@ -87,25 +110,35 @@ try {
             'name' => $username,
             'password' => $password,
             'profile' => $profile,
-            'comment' => 'Added via Web Portal - ' . date('Y-m-d H:i:s')
+            'server' => 'Hotspot_UMS',
+            'comment' => 'Added via Web Register hospot UMPKU - ' . date('Y-m-d H:i:s')
         ]);
         
-        $api->disconnect();
+        // Disconnect segera
+        @$api->disconnect();
         
         // Check for error
         if (is_array($response) && isset($response['!trap'])) {
-            jsonResponse(false, 'Gagal menambahkan user: ' . ($response['!trap'][0]['message'] ?? 'Unknown error'));
+            $errorMsg = $response['!trap'][0]['message'] ?? 'Unknown error';
+        } else {
+            $success = true;
+            $addedUsername = $username;
         }
         
-        jsonResponse(true, 'User berhasil ditambahkan!', [
-            'username' => $username,
-            'profile' => $profile
-        ]);
-        
     } else {
-        jsonResponse(false, 'Gagal terhubung ke MikroTik!');
+        $errorMsg = 'Gagal terhubung ke MikroTik!';
     }
     
 } catch (Exception $e) {
-    jsonResponse(false, 'Error: ' . $e->getMessage());
+    $errorMsg = 'Error: ' . $e->getMessage();
+}
+
+// Kirim response setelah semua koneksi ditutup
+if ($success) {
+    jsonResponse(true, 'User berhasil ditambahkan!', [
+        'username' => $addedUsername,
+        'profile' => $profile
+    ]);
+} else {
+    jsonResponse(false, $errorMsg ?: 'Gagal menambahkan user!');
 }

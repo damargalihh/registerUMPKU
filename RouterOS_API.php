@@ -9,8 +9,8 @@ class RouterosAPI {
     public $debug = false;
     public $connected = false;
     public $timeout = 3;
-    public $attempts = 5;
-    public $delay = 3;
+    public $attempts = 2;
+    public $delay = 1;
     
     private $socket;
     private $error_no;
@@ -46,8 +46,10 @@ class RouterosAPI {
      * Disconnect from RouterOS
      */
     public function disconnect() {
-        if ($this->connected) {
-            fclose($this->socket);
+        if ($this->connected && $this->socket) {
+            @stream_socket_shutdown($this->socket, STREAM_SHUT_RDWR);
+            @fclose($this->socket);
+            $this->socket = null;
             $this->connected = false;
         }
     }
