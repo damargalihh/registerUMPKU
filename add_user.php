@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $username = trim($_POST['username'] ?? '');
 $password = trim($_POST['password'] ?? '');
 $confirmPassword = trim($_POST['confirm_password'] ?? '');
-$profile = trim($_POST['profile'] ?? 'default');
+$profile = 'AnakMagang'; // Profile default untuk semua user
 
 // Validation
 if (empty($username)) {
